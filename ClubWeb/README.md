@@ -144,8 +144,7 @@ POST and PUT send only `{"name":"Campus Finder"}`. Responses contain integer
 single record returns 404.
 
 **201** includes the generated ID in JSON. **204** means there is no response
-body to deserialize. The optional Functions demonstration on port 7071 is
-separate and is not the CRUD API.
+body to deserialize.
 
 ## How it connects
 
