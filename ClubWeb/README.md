@@ -8,6 +8,11 @@ project reference, or authentication screen.
 This is the standalone frontend repository. The backend lives in
 [ms-club-api](https://github.com/JamieMBowers/ms-club-api).
 
+**First time running the workshop? Start with the [student setup guide](../README.md).**
+It walks through installing tools, cloning both repositories, preparing Azure
+SQL, and opening the app in your browser. This file explains the UI and code
+in more detail. All commands below run from the frontend repository root.
+
 ## What the app does
 
 - Loads existing projects automatically once the interactive page connects.
@@ -22,7 +27,8 @@ This is the standalone frontend repository. The backend lives in
   page only.
 
 Only ID and name exist in the backend contract. The ID is assigned by the API,
-not entered in the add form. This workshop API has no endpoint authentication
+not entered in the add form. Adding a project creates a database row, not a
+source-code project or folder. This workshop API has no endpoint authentication
 or authorization and is **not secured for production**.
 
 ## Prerequisites
@@ -30,7 +36,7 @@ or authorization and is **not secured for production**.
 - .NET 10 SDK, PowerShell, and a modern browser.
 - Complete the existing [API database configuration and schema readiness
   steps](https://github.com/JamieMBowers/ms-club-api/blob/master/ClubApi/README.md#configure-azure-sql-locally).
-- Follow the [backend database readiness instructions](https://github.com/JamieMBowers/ms-club-api/blob/master/README.md#1-refresh-the-azure-sql-firewall-rule-and-wake-the-database)
+- Follow the [backend database readiness instructions](https://github.com/JamieMBowers/ms-club-api/blob/master/README.md#3-configure-your-azure-sql-database)
   for your Azure setup. The frontend itself does not apply migrations, manage
   firewall rules, or change cloud resources.
 - Trust the local development certificate once, accepting the OS prompt:
@@ -56,6 +62,11 @@ Terminal 2 - frontend with Hot Reload:
 ```powershell
 dotnet watch --project .\ClubWeb\ClubWeb.csproj run --launch-profile https
 ```
+
+Before using the frontend, check <https://localhost:7240/api/projects> returns
+`[]` or an array of records. A successful response proves a database read;
+loading the Scalar documentation page alone does not. A new database has no
+records until you add one.
 
 Open **<https://localhost:7260/projects>**. The API remains at port **7240**,
 with Scalar at <https://localhost:7240/scalar/v1>. The HTTP alternatives are
