@@ -1,0 +1,176 @@
+@page "/"
+@page "/projects"
+@implements IDisposable
+@inject ProjectsApiClient Api
+
+<PageTitle>Club projects | GMU Microsoft Club</PageTitle>
+
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">GMU Microsoft Club</p>
+        <h1>Club projects</h1>
+        <p>Keep your club's project ideas in one place.</p>
+    </div>
+    <button type="button" class="secondary" disabled="@busy" @onclick="LoadAsync">Refresh projects</button>
+</div>
+
+<div class="connection-bar">
+    <span class="connection-state">@ConnectionText</span>
+    <span class="help-text">API: <code>@Api.BaseAddress</code></span>
+</div>
+
+<div role="status" aria-live="polite">
+    @if (busy)
+    {
+        <p class="working">@busyMessage</p>
+    }
+    @if (successMessage is not null)
+    {
+        <p class="notice success">@successMessage</p>
+    }
+</div>
+@if (errorMessage is not null)
+{
+    <p class="notice error" role="alert">@errorMessage</p>
+}
+@if (refreshRequired)
+{
+    <p class="notice" role="alert">Your last change may have reached the API. Use Refresh projects and check the result before trying another change.</p>
+}
+
+<div class="projects-layout" aria-busy="@busy">
+    <section class="panel create-panel" aria-labelledby="create-heading">
+        <h2 id="create-heading">Add a project</h2>
+        <p>Give your idea a name to get started.</p>
+        <EditForm @key="createContext" EditContext="@createContext" OnSubmit="CreateAsync" FormName="create-project">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+            <fieldset disabled="@(busy || refreshRequired || editModel is not null || pendingDelete is not null)">
+                <label for="create-name">Project name</label>
+                @* Bind to an editable model, never to a displayed API response. *@
+                <InputText id="create-name" @bind-Value="createModel.Name" placeholder="e.g. Campus Finder" aria-describedby="create-help" />
+                <small id="create-help">Required. Up to 100 characters. Your project ID is assigned automatically.</small>
+                <ValidationMessage For="() => createModel.Name" />
+                <button type="submit">Add project</button>
+            </fieldset>
+        </EditForm>
+    </section>
+
+    <section class="panel list-panel" aria-labelledby="list-heading">
+        <div class="list-heading">
+            <h2 id="list-heading">Your projects <span class="count">@projects.Count</span></h2>
+            <span class="help-text">Saved in your existing API</span>
+        </div>
+        <label for="project-search">Search projects</label>
+        <div class="search-bar">
+            <input id="project-search" type="search" @bind="search" @bind:event="oninput"
+                   placeholder="Search by name or ID" />
+            @if (!string.IsNullOrEmpty(search))
+            {
+                <button type="button" class="secondary" @onclick="() => search = string.Empty">Clear search</button>
+            }
+        </div>
+
+        @if (editModel is not null && editContext is not null)
+        {
+            <section class="selection-panel" aria-labelledby="edit-heading">
+                <p class="eyebrow">Project #@editingId</p>
+                <h3 id="edit-heading">Rename project</h3>
+                <EditForm @key="editContext" EditContext="@editContext" OnSubmit="SaveAsync" FormName="rename-project">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <fieldset disabled="@(busy || refreshRequired)">
+                        <label for="edit-name">New project name</label>
+                        <InputText id="edit-name" @bind-Value="editModel.Name" />
+                        <ValidationMessage For="() => editModel.Name" />
+                        <button type="submit">Save changes</button>
+                    </fieldset>
+                    <button type="button" class="secondary" disabled="@busy" @onclick="CancelEdit">Cancel rename</button>
+                </EditForm>
+            </section>
+        }
+
+        @if (pendingDelete is not null)
+        {
+            <section class="selection-panel delete-panel" aria-labelledby="delete-heading">
+                <h3 id="delete-heading">Delete project?</h3>
+                <p>Delete <strong>@pendingDelete.Name</strong> (ID @pendingDelete.Id)? This cannot be undone.</p>
+                <div class="actions">
+                    <button type="button" class="danger" disabled="@(busy || refreshRequired)" @onclick="ConfirmDeleteAsync">Delete permanently</button>
+                    <button type="button" class="secondary" disabled="@busy" @onclick="CancelDelete">Keep project</button>
+                </div>
+            </section>
+        }
+
+        @if (selectedProject is not null && editModel is null && pendingDelete is null)
+        {
+            <section class="selection-panel" aria-labelledby="details-heading">
+                <h3 id="details-heading">Project details</h3>
+                <dl>
+                    <dt>Name</dt><dd>@selectedProject.Name</dd>
+                    <dt>ID</dt><dd>@selectedProject.Id</dd>
+                </dl>
+                <p class="help-text">Read directly from the API for this project.</p>
+                <button type="button" class="secondary" disabled="@busy" @onclick="() => selectedProject = null">Close details</button>
+            </section>
+        }
+
+        @if (listState == ListState.Loading && projects.Count == 0)
+        {
+            <p class="empty-state">Loading your projects...</p>
+        }
+        else if (listState == ListState.Failed)
+        {
+            <p class="empty-state">We couldn't refresh your projects. Check the API and try Refresh projects.</p>
+            @if (projects.Count > 0)
+            {
+                <p class="help-text">The last loaded list is shown below and may be out of date.</p>
+            }
+        }
+        else if (listState == ListState.Loaded && projects.Count == 0)
+        {
+            <div class="empty-state">
+                <h3>Your next idea starts here</h3>
+                <p>No projects yet. Use Add a project to create your first one.</p>
+            </div>
+        }
+
+        @if (projects.Count > 0)
+        {
+            var visibleProjects = FilteredProjects.ToArray();
+            @if (visibleProjects.Length == 0)
+            {
+                <p class="empty-state">No projects match your search. Try another name or ID.</p>
+            }
+            else
+            {
+                <p class="help-text">Showing @visibleProjects.Length of @projects.Count projects</p>
+                <ul class="project-list">
+                    @foreach (var project in visibleProjects)
+                    {
+                        <li @key="project.Id">
+                            <ProjectCard Project="@project" Disabled="@(busy || editModel is not null || pendingDelete is not null)" WritesDisabled="@refreshRequired"
+                                         OnView="ViewAsync" OnEdit="BeginEdit" OnDelete="BeginDelete" />
+                        </li>
+                    }
+                </ul>
+            }
+        }
+    </section>
+</div>
+
+<details class="api-activity">
+    <summary>Behind the scenes: API activity</summary>
+    <p class="help-text">The forms call your existing endpoints. Select a recent request to inspect its status and JSON.</p>
+    <div class="activity-list">
+        @foreach (var item in activity)
+        {
+            <button type="button" class="activity-item @(ReferenceEquals(selectedExchange, item) ? "selected" : "")"
+                    disabled="@requestInFlight" @onclick="() => selectedExchange = item">
+                <strong>@item.Method</strong> <code>@item.Url.AbsolutePath</code>
+                <span>@(item.StatusCode is { } status ? $"HTTP {(int)status}" : "Connection error")</span>
+            </button>
+        }
+    </div>
+    <ApiResponsePanel Exchange="@selectedExchange" Busy="@requestInFlight" />
+</details>

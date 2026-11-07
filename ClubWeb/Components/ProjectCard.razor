@@ -1,0 +1,35 @@
+<article class="project-card" aria-labelledby="@($"project-{Project.Id}")">
+    <div class="project-info">
+        <h3 id="@($"project-{Project.Id}")">@Project.Name</h3>
+        <span class="project-id">ID @Project.Id</span>
+    </div>
+    <div class="actions">
+        <button type="button" class="secondary" disabled="@Disabled"
+                @onclick="() => OnView.InvokeAsync(Project)" aria-label="@($"View {Project.Name}")">View</button>
+        <button type="button" class="secondary" disabled="@(Disabled || WritesDisabled)"
+                @onclick="() => OnEdit.InvokeAsync(Project)" aria-label="@($"Rename {Project.Name}")">Rename</button>
+        <button type="button" class="danger-outline" disabled="@(Disabled || WritesDisabled)"
+                @onclick="() => OnDelete.InvokeAsync(Project)" aria-label="@($"Delete {Project.Name}")">Delete</button>
+    </div>
+</article>
+
+@code {
+    // Data flows into the card; callbacks ask the parent to handle the selected project.
+    [Parameter, EditorRequired]
+    public required ProjectResponse Project { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter]
+    public bool WritesDisabled { get; set; }
+
+    [Parameter]
+    public EventCallback<ProjectResponse> OnView { get; set; }
+
+    [Parameter]
+    public EventCallback<ProjectResponse> OnEdit { get; set; }
+
+    [Parameter]
+    public EventCallback<ProjectResponse> OnDelete { get; set; }
+}

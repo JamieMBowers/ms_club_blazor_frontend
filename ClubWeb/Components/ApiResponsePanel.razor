@@ -1,0 +1,77 @@
+@using System.Net
+@using Microsoft.AspNetCore.WebUtilities
+
+<section class="panel response-panel" aria-labelledby="response-heading" aria-busy="@Busy">
+    <h3 id="response-heading">Request details</h3>
+    @if (Exchange is null)
+    {
+        <div class="response-empty">
+            <strong>No request sent yet</strong>
+            <p>Use a project form or list action to make a request.</p>
+            <p>You will see the HTTP status, returned JSON, and Location header here.</p>
+        </div>
+    }
+    else
+    {
+        <p class="eyebrow">@(Busy ? "Sending request" : "Last request")</p>
+        <p class="request-url"><strong>@Exchange.Method</strong> <code>@Exchange.Url</code></p>
+        @if (Exchange.RequestJson is not null)
+        {
+            <details>
+                <summary>JSON sent with this request</summary>
+                <pre><code>@Exchange.RequestJson</code></pre>
+            </details>
+        }
+        @if (Busy)
+        {
+            <p role="status">Waiting for the API...</p>
+        }
+        else
+        {
+            <p class="http-status @(Exchange.Error is null ? "status-success" : "status-error")" role="status">
+                @if (Exchange.StatusCode is { } status)
+                {
+                    <strong>HTTP @((int)status) @ReasonPhrases.GetReasonPhrase((int)status)</strong>
+                }
+                else
+                {
+                    <strong>No HTTP response received</strong>
+                }
+            </p>
+            @if (Exchange.Error is not null)
+            {
+                <p class="notice error" role="alert">@Exchange.Error</p>
+            }
+            @if (Exchange.Location is not null)
+            {
+                <h3>Location header</h3>
+                <code class="header-value">@Exchange.Location</code>
+            }
+            @if (Exchange.StatusCode == HttpStatusCode.NoContent && Exchange.Error is null)
+            {
+                <div class="notice success">
+                    Request succeeded. <strong>204 No Content has no response body.</strong>
+                    The project list refreshes separately after a successful change.
+                </div>
+            }
+            else if (Exchange.ResponseJson is not null)
+            {
+                <h3>@(Exchange.Error is null ? "Response JSON (formatted)" : "Safe error summary")</h3>
+                @if (Exchange.Error is not null)
+                {
+                    <p class="help-text">This is a safe summary, not the raw server error body. Internal details are hidden.</p>
+                }
+                <pre class="response-json" tabindex="0" aria-label="Response JSON"><code>@Exchange.ResponseJson</code></pre>
+            }
+        }
+    }
+</section>
+
+@code {
+    // The parent owns requests; this component only presents their captured results.
+    [Parameter]
+    public ApiExchange? Exchange { get; set; }
+
+    [Parameter]
+    public bool Busy { get; set; }
+}
