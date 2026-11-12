@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "ClubWeb (https)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build ClubWeb",
+      "program": "${workspaceFolder}\\ClubWeb\\bin\\Debug\\net10.0\\ClubWeb.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}\\ClubWeb",
+      "stopAtEntry": false,
+      "console": "integratedTerminal",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "https://localhost:7260;http://localhost:5260"
+      }
+    }
+  ]
+}

@@ -148,6 +148,42 @@ before starting this repository's frontend.
 Stop each app with **Ctrl+C** in its own terminal. For later sessions, repeat
 step 4; there is no need to clone again or create another migration.
 
+### Run in two VS Code windows
+
+Open the repository folders separately. From the folder containing both clones:
+
+```powershell
+code --new-window .\ms_club_api
+code --new-window .\ms_club_blazor_frontend
+```
+
+If the backend is already open, only run the second command. Install the
+**C# Dev Kit** (or **C#**) extension. Each window selects its own solution
+using `.vscode\settings.json`; no backend project reference is needed.
+
+Complete the first-time database setup in step 3 before starting.
+
+1. In the backend window's terminal, run
+   `.\scripts\Update-SqlFirewall.ps1` from the backend repository root.
+   Wait for the **database-ready message**. If your Azure login has expired,
+   run `az login` first. The script is in the backend, not this repository.
+2. In the backend window, select **ClubApi (https)** in **Run and Debug**
+   and press **F5**. Wait for the listening message.
+3. In the frontend window, select **ClubWeb (https)** and press **F5**.
+4. Open **<https://localhost:7260/>** and keep both apps running.
+
+If Windows blocks a file from running, follow
+[If Windows blocks execution](#if-windows-blocks-execution) below.
+
+The frontend configuration builds only `ClubWeb` and uses the Development
+API address. **Ctrl+Shift+B** builds the frontend, and **Terminal > Run Task >
+test ClubWeb** runs its tests. **Shift+F5** stops debugging in that window
+without stopping the other app. Do not also start `dotnet watch` or `dotnet run`
+on the same ports while debugging.
+
+You can develop and build each repository independently, but frontend data
+operations require the API to be running.
+
 ## 5. Try it and see how it works
 
 1. Expand **Behind the scenes: API activity**. Initial loading sends
@@ -221,6 +257,31 @@ repository present.
 | Saved change but list refresh failed | Use **Refresh projects**, not another add/rename/delete. Check existing data before retrying an uncertain write. |
 | No API requests in browser DevTools | Expected with Interactive Server. Expand **Behind the scenes: API activity** or use Scalar instead. |
 | Missing API BaseUrl setting | Use the `https` launch profile (Development), or explicitly set `ClubApi__BaseUrl` for another environment. |
+
+### If Windows blocks execution
+
+**Error `0x800711C7` means Windows Application Control blocked a file from
+running.** This is a Windows security-policy restriction, not a compiler error
+or an Azure SQL firewall error.
+
+During our local setup, both solutions **built successfully**, but Windows
+blocked the **test assemblies**. No tests executed, so their results could not
+be verified. This does **not** establish that the API or frontend is blocked
+too; try the normal startup steps and check the actual error.
+
+If you see this error:
+
+1. Stop retrying the blocked command. Save the error code, blocked file name,
+   and what you were trying to run. Do not share passwords or access tokens.
+2. Ask your teacher or IT administrator for help. They can inspect
+   **Event Viewer > Applications and Services Logs > Microsoft > Windows >
+   CodeIntegrity > Operational** and determine which development files or
+   tools need approval under the device's policy.
+3. After approval, retry the same command or F5 launch. If tests were blocked,
+   rerun them and confirm that tests actually execute.
+
+**Do not disable Windows security or download unofficial "fix" tools.**
+Changing Azure SQL firewall rules will not fix this Windows execution block.
 
 ## Project layout
 
